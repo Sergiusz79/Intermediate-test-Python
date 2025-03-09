@@ -6,4 +6,4 @@ class Note:
 
  class NoteManager:
 
-def main():     
+def main(): 
