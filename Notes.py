@@ -2,21 +2,21 @@ import json
 import csv
 from datetime import datetime
 
-class Note:
-    def __init__(self, note_id, title, body, timestamp=None):
+class Note: # Model - MVC, представляет одну заметку.
+    def __init__(self, note_id, title, body, timestamp=None): # Инициализация заметки
         self.note_id = note_id
         self.title = title
         self.body = body
-        self.timestamp = timestamp or datetime.now().isoformat()
+        self.timestamp = timestamp or datetime.now().isoformat() #Если timestamp не указан, используется текущее время.
 
-    def update(self, title=None, body=None):
+    def update(self, title=None, body=None): # Обновление заголовка и/или тела заметки, если переданы новые значения.
         if title:
             self.title = title
         if body:
             self.body = body
-        self.timestamp = datetime.now().isoformat()
+        self.timestamp = datetime.now().isoformat() # Обновляет временную метку изменения.
 
-    def to_dict(self):
+    def to_dict(self): # Преобразует заметку в словарь для сохранения в файле.
         return {
             "id": self.note_id,
             "title": self.title,
@@ -25,9 +25,76 @@ class Note:
         }
     
     @staticmethod
-    def from_dict(data):
+    def from_dict(data): # Создаёт объект Note из словаря.
         return Note(data["id"], data["title"], data["body"], data["timestamp"])
 
-class NoteManager:
+class NoteManager: # Controller - MVC, управляет списком заметок, их сохранением и загрузкой.
+
+    def __init__(self, storage_file, storage_format="json"): # Принимает путь к файлу хранения заметок и формат, загружает заметки из файла.
+        self.storage_file = storage_file
+        self.storage_format = storage_format
+        self.notes = self.load_notes()
+
+    def load_notes(self): # Загружает заметки из файла 'storage_file', возвращает список объектов
+        try:
+            with open(self.storage_file, "r", encoding="utf-8") as file:
+                if self.storage_format == "json":
+                    return [Note.from_dict(note) for note in json.load(file)]
+                elif self.storage_format == "csv":
+                    reader = csv.DictReader(file, delimiter=';')
+                    return [Note.from_dict(row) for row in reader]
+        except FileNotFoundError:
+            return []
+        
+    def save_notes(self): # Сохраняет список заметок в файл
+        with open(self.storage_file, "w", encoding="utf-8") as file:
+            if self.storage_format == "json":
+                json.dump([note.to_dict() for note in self.notes], file, ensure_ascii=False, indent=4)
+            elif self.storage_format == "csv":
+                writer = csv.DictWriter(file, fieldnames=["id", "title", "body", "timestamp"], delimiter=';')
+                writer.writeheader()
+                for note in self.notes:
+                    writer.writerow(note.to_dict())
+
+    def create_note(self, title, body): # Создаёт новую заметку и добавляет её в список
+        note_id = len(self.notes) + 1
+        new_note = Note(note_id, title, body)
+        self.notes.append(new_note)
+        self.save_notes() # и сохраняет 
+
+    def list_notes(self, start_date=None, end_date=None): # Cписок заметок с возможностью фильтрации по дате
+        filtered_notes = self.notes
+        if start_date:
+            start_date = datetime.fromisoformat(start_date)
+            filtered_notes = [note for note in filtered_notes if datetime.fromisoformat(note.timestamp) >= start_date]
+        if end_date:
+            end_date = datetime.fromisoformat(end_date)
+            filtered_notes = [note for note in filtered_notes if datetime.fromisoformat(note.timestamp) <= end_date]
+        return filtered_notes
+    
+    def get_note_by_id(self, note_id): # Поиск заметки по id
+        for note in self.notes:
+            if note.note_id == note_id:
+                return note
+        return None
+    
+    def update_note(self, note_id, title=None, body=None): # Обновление заголовока/тела заметки по id
+        note = self.get_note_by_id(note_id)
+        if note:
+            note.update(title, body)
+            self.save_notes()
+            return True
+        return False
+    
+    def delete_note_by_id(self, note_id): # Удаление по id
+        note = self.get_note_by_id(note_id)
+        if note:
+            self.notes.remove(note)
+            self.save_notes()
+            return True
+        return False
+    
+class NoteView: # Viev - MVC, отвечает за взаимодействие с пользователем
+
 
 def main(): 
