@@ -96,5 +96,76 @@ class NoteManager: # Controller - MVC, управляет списком зам�
     
 class NoteView: # Viev - MVC, отвечает за взаимодействие с пользователем
 
+    def __init__(self, manager): # Принимает объект NoteManager для управления заметками
+        self.manager = manager
 
-def main(): 
+    def display_menu(self): #Основное меню
+        while True:
+            print("\n1. Create note")
+            print("2. List notes")
+            print("3. View note")
+            print("4. Edit note")
+            print("5. Delete note")
+            print("6. Exit")
+            choice = input("Choose an option: ")
+
+            if choice == "1":
+                self.create_note()
+            elif choice == "2":
+                self.list_notes()
+            elif choice == "3":
+                self.view_note()
+            elif choice == "4":
+                self.edit_note()
+            elif choice == "5":
+                self.delete_note()
+            elif choice == "6":
+                print("Goodbye!")
+                break
+            else:
+                print("Invalid choice, try again.")
+
+    def create_note(self): # Запрашивает у пользователя заголовок и тело, создаёт новую заметку
+        title = input("Enter title: ")
+        body = input("Enter body: ")
+        self.manager.create_note(title, body)
+        print("Note created.")
+
+    def list_notes(self): # Выводит список заметок с возможной фильтрацией по дате
+        start_date = input("Enter start date (YYYY-MM-DD) or leave blank: ") or None
+        end_date = input("Enter end date (YYYY-MM-DD) or leave blank: ") or None
+        notes = self.manager.list_notes(start_date, end_date)
+        for note in notes:
+            print(f"ID: {note.note_id}, Title: {note.title}, Last Modified: {note.timestamp}")
+
+    def view_note(self): # Позволяет посмотреть заметку по id
+        note_id = int(input("Enter note ID: "))
+        note = self.manager.get_note_by_id(note_id)
+        if note:
+            print(f"ID: {note.note_id}\nTitle: {note.title}\nBody: {note.body}\nLast Modified: {note.timestamp}")
+        else:
+            print("Note not found.")
+
+    def edit_note(self): # Позволяет редактировать заголовок/текст заметки
+        note_id = int(input("Enter note ID: "))
+        title = input("Enter new title (leave blank to keep current): ")
+        body = input("Enter new body (leave blank to keep current): ")
+        if self.manager.update_note(note_id, title, body):
+            print("Note updated.")
+        else:
+            print("Note not found.")
+
+    def delete_note(self): # Удаляет заметку по id
+        note_id = int(input("Enter note ID: "))
+        if self.manager.delete_note_by_id(note_id):
+            print("Note deleted.")
+        else:
+            print("Note not found.")
+
+def main(): # Создаёт объект NoteManager и NoteView, затем запускает меню
+    manager = NoteManager("notes.json")
+    view = NoteView(manager)
+    view.display_menu()
+
+if __name__ == "__main__":
+    main()
